@@ -8,6 +8,5 @@ public interface RoomService {
     RoomDto createNewRoom(Long hotelId,RoomDto RoomDto);
     List<RoomDto> getAllRoomsInHotel(Long hotelId);
     RoomDto getRoomById(Long roomId);
-    //RoomDto updateRoomById(Long id,RoomDto RoomDto);
     void DeleteRoomById(Long roomId);
 }

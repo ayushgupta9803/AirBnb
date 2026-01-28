@@ -6,6 +6,7 @@ import com.projects.AirBnb.Entity.Room;
 import com.projects.AirBnb.Repository.HotelRepository;
 import com.projects.AirBnb.Repository.RoomRepository;
 import com.projects.AirBnb.exception.ResourceNotFoundException;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -22,6 +23,7 @@ public class RoomServiceImpl implements RoomService {
     private final RoomRepository RoomRepository; // constructor injection is happening because of requiredArgsConstructor so that's we don't any autowired keyword
     private final HotelRepository hotelRepository;
     private final ModelMapper modelMapper;
+    private final InventoryService inventoryService;
 
     @Override
     public RoomDto createNewRoom(Long hotelId,RoomDto roomDto) {
@@ -33,8 +35,10 @@ public class RoomServiceImpl implements RoomService {
         room.setHotel(hotel);
         room = RoomRepository.save(room);
 
-        // TODO create the inventory for the room as soon as it is created and hotel is active
-
+        if(hotel.getActive())
+        {
+            inventoryService.initializeRoomForAYear(room);
+        }
         return modelMapper.map(room,RoomDto.class);
     }
 
@@ -59,25 +63,16 @@ public class RoomServiceImpl implements RoomService {
         return modelMapper.map(room,RoomDto.class);
     }
 
-//    @Override
-//    public RoomDto updateRoomById(Long id, RoomDto RoomDto) {
-//        log.info("Updating the Room with ID: {}", id);
-//        Room Room = RoomRepository.
-//                findById(id).
-//                orElseThrow(() -> new ResourceNotFoundException("Room not found with ID "+ id));
-//        modelMapper.map(RoomDto,Room);
-//        Room.setId(id);
-//        RoomRepository.save(Room);
-//        return modelMapper.map(Room,RoomDto.class);
-//    }
-
     @Override
+    @Transactional
     public void DeleteRoomById(Long id) {
         log.info("Deleting the Room with ID: {}", id);
-        boolean exists = RoomRepository.existsById(id);
-        if(!exists) throw new ResourceNotFoundException("Room not found with ID "+ id);
+        Room room = RoomRepository.
+                findById(id).
+                orElseThrow(() -> new ResourceNotFoundException("Room not found with ID "+ id));
 
-        RoomRepository.deleteById(id);
-        // TODO: delete the future inventories for this Room
+        inventoryService.deleteFutureInventories(room);
+        RoomRepository.delete(room);
+        RoomRepository.flush();
     }
 }
