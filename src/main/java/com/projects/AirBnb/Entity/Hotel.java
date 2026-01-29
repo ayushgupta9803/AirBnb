@@ -38,7 +38,7 @@ public class Hotel {
     @Embedded
     private HotelContactInfo contactInfo;
 
-    @Column(updatable = false)
+    @Column(nullable = false)
     private Boolean active;
 
     @ManyToOne

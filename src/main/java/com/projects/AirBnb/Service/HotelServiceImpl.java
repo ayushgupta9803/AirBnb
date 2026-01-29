@@ -4,6 +4,7 @@ import com.projects.AirBnb.DTO.HotelDto;
 import com.projects.AirBnb.Entity.Hotel;
 import com.projects.AirBnb.Entity.Room;
 import com.projects.AirBnb.Repository.HotelRepository;
+import com.projects.AirBnb.Repository.RoomRepository;
 import com.projects.AirBnb.exception.ResourceNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @RequiredArgsConstructor
 public class HotelServiceImpl implements HotelService {
+    private final RoomRepository roomRepository;
 
     private final HotelRepository hotelRepository; // constructor injection is happening because of requiredArgsConstructor so that's we don't any autowired keyword
     private final ModelMapper modelMapper;
@@ -58,11 +60,11 @@ public class HotelServiceImpl implements HotelService {
                 findById(hotelId).
                 orElseThrow(() -> new ResourceNotFoundException("Hotel not found with ID "+ hotelId));
 
-        hotelRepository.deleteById(hotelId);
-
         for(Room room : hotel.getRooms()) {
-            inventoryService.deleteFutureInventories(room);
+            inventoryService.deleteAllInventories(room);
+            roomRepository.deleteById(room.getId());
         }
+        hotelRepository.deleteById(hotelId);
     }
 
     @Override
@@ -73,7 +75,8 @@ public class HotelServiceImpl implements HotelService {
                 findById(hotelId).
                 orElseThrow(() -> new ResourceNotFoundException("Hotel not found with ID "+ hotelId));
         hotel.setActive(true);
-
+        //hotelRepository.save(hotel);
+        hotelRepository.saveAndFlush(hotel);
         // assuming only do it once
 
         for(Room room : hotel.getRooms())
